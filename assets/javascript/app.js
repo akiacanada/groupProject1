@@ -25,6 +25,8 @@ firebase.auth().onAuthStateChanged(function(user) {
     $("#newUser").hide();
     $("#logout").show();
     $("#favs").show();
+    $("#modal1").hide();
+    $("#modal2").hide();
     // ...
   } else {
     $("#welcome").hide();
@@ -39,9 +41,9 @@ var dataMethods = {
         var errorMessage = error.message;
         // [START_EXCLUDE]
         if (errorCode == 'auth/weak-password') {
-          $("#sign-up-err").val('The password is too weak.');
+          $("#sign-up-err").text('The password is too weak.');
         } else {
-          $("#sign-up-err").val(errorMessage);
+          $("#sign-up-err").text(errorMessage);
         }
         console.log(error);
         // [END_EXCLUDE]
@@ -54,9 +56,9 @@ var dataMethods = {
         var errorMessage = error.message;
         // [START_EXCLUDE]
         if (errorCode === 'auth/wrong-password') {
-            $("#sign-in-err").val('Wrong password.');
+            $("#sign-in-err").text('Wrong password.');
         } else {
-            $("#sign-in-err").val(errorMessage);
+            $("#sign-in-err").text(errorMessage);
         }
         console.log(error);
         // [END_EXCLUDE]
@@ -127,6 +129,11 @@ $("#recipe-results").on("click", "a.directions", function(){
     window.open(this.href);
 });
 
+$("#either-divTwo").on("click", "a.directions", function(){
+    window.open(this.href);
+});
+
+
 var zomato = {
     lookupUser: function(){
         //whatever
@@ -139,9 +146,11 @@ var zomato = {
             $("either-div").empty();
             $("#either-div").append("<p>Eat Out!</p>");
             zomato.queryCity(cityName);
+
         } else {
             $("either-div").empty();
             $("#either-div").append("<p>Stay In!</p>");
+            yummly.randomRecipe();
         }
 
 
@@ -161,15 +170,20 @@ var zomato = {
             method: "GET"
         }).done(function(response){
             $("#location-results").empty();
+            $("#either-divTwo").empty();
             var result=response.location_suggestions;
             for(var i=0; i < result.length; i++){
                 //create buttons based on city selected and append city id into a data-type
                 var locationbtn = $("<button>");
+                var locationbtnTwo = $("<button>")
                 locationbtn.attr("data-type", result[i].id);
+                locationbtnTwo.attr("data-type", result[i].id);
                 locationbtn.text(result[i].name);
+                locationbtnTwo.text(result[i].name);
                 locationbtn.addClass("city-select chip waves-effect waves-light");
+                locationbtnTwo.addClass("city-select chip waves-effect waves-light");
                 $("#location-results").append(locationbtn);
-                $("#either-divTwo").append(locationbtn);
+                $("#either-divTwo").append(locationbtnTwo);
             }
             $("#location-results").append("<p>Select your location</p>");
         });
@@ -318,6 +332,7 @@ var zomato = {
     },
     //pick a random restaurant from an ajax call based on cityId
     randomRestaurant: function(cityId){
+        $("#either-divThree").empty();
         randomQueryURL = "https://developers.zomato.com/api/v2.1/search?entity_id="+cityId+"&entity_type=city&apikey="+apiKey;
         //Ajax request for restaurant data
         $.ajax({
@@ -341,6 +356,7 @@ var zomato = {
                 optionResults.append("<td>"+results[randomRestaurantNumber].restaurant.price_range+"</td>");
                 optionResults.append("<td>"+results[randomRestaurantNumber].restaurant.user_rating.aggregate_rating+"</td>");
                 resultTable.append(optionResults);
+                $("#either-divThree").append("<button class='reset chip waves-effect waves-light'>Choose Another Restaurant</button>")
         });
         
     }
@@ -363,7 +379,7 @@ var yummly = {
         }
     },
     callYummly: function() {
-        var queryItem = $("#ingredient-input").val().trim();
+        var queryItem = $("#ingredient-input").val().trim().toLowerCase();
         var queryUrl = "http://api.yummly.com/v1/api/recipes?_app_id=804bf8b9&_app_key=41611fa0ed256dc5c5378bdf87593e25&allowedIngredient[]=";
         $.ajax({
             url: queryUrl + encodeURIComponent(queryItem),
@@ -380,7 +396,7 @@ var yummly = {
                     "<tr>" +
                         "<th>" + "Image" + "</th>" +
                         "<th>" + "Recipe Name" + "</th>" +
-                        "<th>" + "Ingredients" + "</th>" +
+                        "<th>" + "Ingredients" + "</th>" +"<th>"+"Favorites"+ "</th>" +
                     "</tr>" +
                 "</table>");
 
@@ -395,14 +411,70 @@ var yummly = {
                 var ingredients=result[i].ingredients;
                 
 
-                var newRow="<tr class=\"table-row\"><td><img src='"+recipeImage+"'>" +  "</td><td><a id =\"recipe-" + i + "\" target=\"_blank\">" + recipeName + "</a></td><td>" + ingredients + "</td></tr>";
+            var newRow = "<tr class=\"table-row\"><td><img src='" + recipeImage + "'>" + "</td><td><a id =\"recipe-" + i + "\" target=\"_blank\">" + recipeName + "</a></td><td>" + ingredients + "</td><td><button id=\"favesBtnId\" class=\"favesBtn\">" + "<span id=\"emptyHeart\" class=\"glyphicon glyphicon-heart-empty\"></span>" + "</button></a></td></tr>";
                 table.append(newRow);
             }
             $("#recipe-results").append(table);
             yummly.getRecipeLink();
         });
+    },
+    randomRecipe: function(){
+        var ingredients = ["chicken", "pasta", "butter", "tomato", "feta", "olives", "lettuce", "apple", "milk", "carrot", "cracker", "steak", "salmon", "turkey", "tofu", "sour cream", "eggs", "spinach", "chedar cheese", "almonds", "onion", "green beans", "squash", "potato", "cauliflower", "broth", "mushrooms", "salsa", "hashbrowns", "bread", "raisins", "quinoa", "brown rice", "bell pepper", "banana", "bok choy", "soy sauce", "tortilla chips"];
+
+        var randomIngredient = ingredients[Math.floor(Math.random() * ingredients.length)];
+        
+        $.ajax({
+            url: "http://api.yummly.com/v1/api/recipes?_app_id=804bf8b9&_app_key=41611fa0ed256dc5c5378bdf87593e25&allowedIngredient[]=" + encodeURIComponent(randomIngredient),
+            method: "GET"
+        }).done(function(response){
+            console.log(response);
+
+            var result=response.matches;
+            yummlyMatches = response.matches;
+            var recipeName = "";
+
+            var table = $("<table class=\"table result-table\">" +
+                "<tr>" +
+                "<th>" + "Image" + "</th>" +
+                "<th>" + "Recipe Name" + "</th>" +
+                "<th>" + "Ingredients" + "</th>" + "<th>" + "Favorite?" + "</th>" +
+                "</tr>" +
+                "</table>");
+
+            $("#either-divTwo").append("<p>Try one of these recipes!</p>");
+            for (var i=0; i < result.length; i++){
+
+                var recipeId="http://www.yummly.com/recipe/" + result[i].id;
+                console.log(recipeId);
+                var recipeName=result[i].recipeName;
+                var recipeImage=result[i].smallImageUrls[0];
+
+                //console.log(recipeImage);
+                var ingredients=result[i].ingredients;
+                
+
+                var newRow = "<tr class=\"table-row\"><td><img src='" + recipeImage + "'>" + "</td><td><a id =\"recipe-" + i + "\" target=\"_blank\">" + recipeName + "</a></td><td>" + ingredients + "</td><td><button id=\"favesBtnId\" class=\"favesBtn\">" + "<span id=\"emptyHeart\" class=\"glyphicon glyphicon-heart-empty\"></span>" + "</button></a></td></tr>";
+                table.append(newRow);
+            }
+            $("#either-divTwo").append(table);
+            yummly.getRecipeLink();
+        });
+
+
+
     }
 }
+
+/*************Yummily Function Calls*************/
+
+$(document).on("click", ".favesBtn", function(event) {
+    event.preventDefault();
+   
+    $("#emptyHeart").removeClass("glyphicon glyphicon-heart-empty");
+
+    $("#emptyHeart").addClass("glyphicon glyphicon-heart");
+});
+
 
 /*************Zomato Function Calls*************/
 //City input and submission
@@ -446,6 +518,14 @@ $("#zip-submit").on("click", function() {
 $("#either-divTwo").on("click", ".city-select", function(){
     cityId = $(this).attr("data-type");
     zomato.randomRestaurant(cityId);
+});
+
+$("#either-divThree").on("click", ".reset", function() {
+    zomato.randomRestaurant(cityId);
+})
+
+$("#either-divThree").on("click", "a.rest-overview", function(){
+    window.open(this.href);
 });
 
 $("#submitLogin1").on("click", function() {
