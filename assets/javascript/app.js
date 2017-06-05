@@ -1,3 +1,5 @@
+// Global variable to let us know if a user is logged in
+var loggedIn = false;
 // Initialize Firebase
 var config = {
 apiKey: "AIzaSyCg6X-cWnRuKUkmwDccwLrA84wLBqMVTWU",
@@ -25,9 +27,17 @@ firebase.auth().onAuthStateChanged(function(user) {
     $("#newUser").hide();
     $("#logout").show();
     $("#favs").show();
-    // ...
+    $("#modal1").hide();
+    $("#modal2").hide();
+    
+    loggedIn = true;
   } else {
     $("#welcome").hide();
+    $("#login").show();
+    $("#newUser").show();
+    $("#logout").hide();
+    $("#favs").hide();
+    loggedIn = false;
   }
 });
 
@@ -39,9 +49,9 @@ var dataMethods = {
         var errorMessage = error.message;
         // [START_EXCLUDE]
         if (errorCode == 'auth/weak-password') {
-          $("#sign-up-err").val('The password is too weak.');
+          $("#sign-up-err").text('The password is too weak.');
         } else {
-          $("#sign-up-err").val(errorMessage);
+          $("#sign-up-err").text(errorMessage);
         }
         console.log(error);
         // [END_EXCLUDE]
@@ -54,9 +64,9 @@ var dataMethods = {
         var errorMessage = error.message;
         // [START_EXCLUDE]
         if (errorCode === 'auth/wrong-password') {
-            $("#sign-in-err").val('Wrong password.');
+            $("#sign-in-err").text('Wrong password.');
         } else {
-            $("#sign-in-err").val(errorMessage);
+            $("#sign-in-err").text(errorMessage);
         }
         console.log(error);
         // [END_EXCLUDE]
@@ -69,7 +79,7 @@ var dataMethods = {
         // An error happened.
             console.log(error);
         });
-    }
+    },
 }
 
 var userSelect;
@@ -81,10 +91,11 @@ function chooseBox() {
 	$("#"+userSelect+"-text").css("margin", "0%");
 	$("#"+userSelect).animate({'left' : '3%', 'width' : '90%', 'height' : '1000px'},1000, function(){
         $("#"+userSelect+"-zip").css("visibility", "visible");
-    });
-    
+    });    
 }
 
+
+//Initial click events to login and load option boxes
 $("#login").on("click",function(){
     event.preventDefault();
     $("#modal1").css("visibility", "visible");
@@ -94,8 +105,6 @@ $("#newUser").on("click",function(){
     event.preventDefault();
     $("#modal2").css("visibility", "visible");
 });
-
-
 
 $("#in").on("click", function(){
     event.preventDefault();
@@ -116,10 +125,7 @@ $("#either").on("click", function(){
     chooseBox();
 });
 
-$("#ingredient-submit").on("click", function(){
-    $("#recipe-results").empty();
-    yummly.callYummly();
-});
+
 
 //Click event to open recipe links
 //Reference site: http://befused.com/jquery/open-link-new-window
@@ -127,10 +133,12 @@ $("#recipe-results").on("click", "a.directions", function(){
     window.open(this.href);
 });
 
+$("#either-divTwo").on("click", "a.directions", function(){
+    window.open(this.href);
+});
+
+//Zomato Functions
 var zomato = {
-    lookupUser: function(){
-        //whatever
-    },
     coinFlip: function(){
         
         var randomNumber = Math.round(Math.random());
@@ -139,13 +147,12 @@ var zomato = {
             $("either-div").empty();
             $("#either-div").append("<p>Eat Out!</p>");
             zomato.queryCity(cityName);
+
         } else {
             $("either-div").empty();
             $("#either-div").append("<p>Stay In!</p>");
+            yummly.randomRecipe();
         }
-
-
-
     },
     queryCity: function(city){
         //Clear all results sections when new city is entered
@@ -161,15 +168,20 @@ var zomato = {
             method: "GET"
         }).done(function(response){
             $("#location-results").empty();
+            $("#either-divTwo").empty();
             var result=response.location_suggestions;
             for(var i=0; i < result.length; i++){
                 //create buttons based on city selected and append city id into a data-type
                 var locationbtn = $("<button>");
+                var locationbtnTwo = $("<button>")
                 locationbtn.attr("data-type", result[i].id);
+                locationbtnTwo.attr("data-type", result[i].id);
                 locationbtn.text(result[i].name);
+                locationbtnTwo.text(result[i].name);
                 locationbtn.addClass("city-select chip waves-effect waves-light");
+                locationbtnTwo.addClass("city-select chip waves-effect waves-light");
                 $("#location-results").append(locationbtn);
-                $("#either-divTwo").append(locationbtn);
+                $("#either-divTwo").append(locationbtnTwo);
             }
             $("#location-results").append("<p>Select your location</p>");
         });
@@ -237,16 +249,15 @@ var zomato = {
             var resultTable = $("<table class='table'>");
             resultTable.append("<thead><tr><th><i class='glyphicon glyphicon-camera'></i> Image</th>"+
                 "<th><i class='glyphicon glyphicon-cutlery'></i> Restaurant</th>"+
-                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i>"+
-                "</th><th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
+                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i></th>"+
+                "<th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
             resultTable.append("<tbody>");
             $("#option-results").append(resultTable);
-            //Add restaurant results as a new row to the table
             var results=response.restaurants;
             for (var i=0; i<results.length; i++){
                 var optionResults = $("<tr>");
                 optionResults.append("<td><img class='rest-image' src='"+results[i].restaurant.thumb+"'></td>"); 
-                optionResults.append("<td><a class='rest-overview' href='"+results[i].restaurant.url+"''>"+results[i].restaurant.name+"</a></td>");
+                optionResults.append("<td><a class='rest-overview' href='"+results[i].restaurant.url+"'>"+results[i].restaurant.name+"</a></td>");
                 optionResults.append("<td>"+results[i].restaurant.price_range+"</td>");
                 optionResults.append("<td>"+results[i].restaurant.user_rating.aggregate_rating+"</td>");
                 resultTable.append(optionResults);
@@ -267,8 +278,8 @@ var zomato = {
             var resultTable = $("<table class='table'>");
             resultTable.append("<thead><tr><th><i class='glyphicon glyphicon-camera'></i> Image</th>"+
                 "<th><i class='glyphicon glyphicon-cutlery'></i> Restaurant</th>"+
-                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i>"+
-                "</th><th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
+                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i></th>"+
+                "<th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
             resultTable.append("<tbody>");
             $("#option-results").append(resultTable);
             //Add restaurant results as a new row to the table
@@ -276,7 +287,7 @@ var zomato = {
             for (var i=0; i<results.length; i++){
                 var optionResults = $("<tr>");
                 optionResults.append("<td><img class='rest-image' src='"+results[i].restaurant.thumb+"'></td>"); 
-                optionResults.append("<td><a class='rest-overview' href='"+results[i].restaurant.url+"''>"+results[i].restaurant.name+"</a></td>");
+                optionResults.append("<td><a class='rest-overview' href='"+results[i].restaurant.url+"'>"+results[i].restaurant.name+"</a></td>");
                 optionResults.append("<td>"+results[i].restaurant.price_range+"</td>");
                 optionResults.append("<td>"+results[i].restaurant.user_rating.aggregate_rating+"</td>");
                 resultTable.append(optionResults);
@@ -297,8 +308,8 @@ var zomato = {
             var resultTable = $("<table class='table'>");
             resultTable.append("<thead><tr><th><i class='glyphicon glyphicon-camera'></i> Image</th>"+
                 "<th><i class='glyphicon glyphicon-cutlery'></i> Restaurant</th>"+
-                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i>"+
-                "</th><th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
+                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i></th>"+
+                "<th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
             resultTable.append("<tbody>");
             $("#option-results").append(resultTable);
             //Add restaurant results as a new row to the table
@@ -306,18 +317,16 @@ var zomato = {
             for (var i=0; i<results.length; i++){
                 var optionResults = $("<tr>");
                 optionResults.append("<td><img class='rest-image' src='"+results[i].restaurant.thumb+"'></td>"); 
-                optionResults.append("<td><a class='rest-overview' href='"+results[i].restaurant.url+"''>"+results[i].restaurant.name+"</a></td>");
+                optionResults.append("<td><a class='rest-overview' href='"+results[i].restaurant.url+"'>"+results[i].restaurant.name+"</a></td>");
                 optionResults.append("<td>"+results[i].restaurant.price_range+"</td>");
                 optionResults.append("<td>"+results[i].restaurant.user_rating.aggregate_rating+"</td>");
                 resultTable.append(optionResults);
             }
         });
     },
-    displayResultZomato: function(){
-
-    },
     //pick a random restaurant from an ajax call based on cityId
     randomRestaurant: function(cityId){
+        $("#either-divThree").empty();
         randomQueryURL = "https://developers.zomato.com/api/v2.1/search?entity_id="+cityId+"&entity_type=city&apikey="+apiKey;
         //Ajax request for restaurant data
         $.ajax({
@@ -328,8 +337,8 @@ var zomato = {
             var resultTable = $("<table class='table'>");
             resultTable.append("<thead><tr><th><i class='glyphicon glyphicon-camera'></i> Image</th>"+
                 "<th><i class='glyphicon glyphicon-cutlery'></i> Restaurant</th>"+
-                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i>"+
-                "</th><th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
+                "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i></th>"+
+                "<th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th></tr></thead>");
             resultTable.append("<tbody>");
             $("#either-divThree").append(resultTable);
             //Add restaurant results as a new row to the table
@@ -341,10 +350,12 @@ var zomato = {
                 optionResults.append("<td>"+results[randomRestaurantNumber].restaurant.price_range+"</td>");
                 optionResults.append("<td>"+results[randomRestaurantNumber].restaurant.user_rating.aggregate_rating+"</td>");
                 resultTable.append(optionResults);
-        });
-        
+                $("#either-divThree").append("<button class='reset chip waves-effect waves-light'>Choose Another Restaurant</button>")
+        });   
     }
 }
+
+/*************Yummily Function Calls*************/
 
 var yummly = {
     getRecipeLink: function() {
@@ -363,7 +374,7 @@ var yummly = {
         }
     },
     callYummly: function() {
-        var queryItem = $("#ingredient-input").val().trim();
+        var queryItem = $("#ingredient-input").val().trim().toLowerCase();
         var queryUrl = "http://api.yummly.com/v1/api/recipes?_app_id=804bf8b9&_app_key=41611fa0ed256dc5c5378bdf87593e25&allowedIngredient[]=";
         $.ajax({
             url: queryUrl + encodeURIComponent(queryItem),
@@ -380,7 +391,7 @@ var yummly = {
                     "<tr>" +
                         "<th>" + "Image" + "</th>" +
                         "<th>" + "Recipe Name" + "</th>" +
-                        "<th>" + "Ingredients" + "</th>" +
+                        "<th>" + "Ingredients" + "</th>" +"<th>"+"Favorites"+ "</th>" +
                     "</tr>" +
                 "</table>");
 
@@ -394,15 +405,182 @@ var yummly = {
                 //console.log(recipeImage);
                 var ingredients=result[i].ingredients;
                 
-
-                var newRow="<tr class=\"table-row\"><td><img src='"+recipeImage+"'>" +  "</td><td><a id =\"recipe-" + i + "\" target=\"_blank\">" + recipeName + "</a></td><td>" + ingredients + "</td></tr>";
+                var newRow = "<tr class='table-row'>" + 
+                    "<td><img id='recImg-"+ i +"'src='" + recipeImage + "'>"+"</td>" +
+                    "<td><a id ='recipe-" + i + "'target='_blank'>" + recipeName + "</a></td>" +
+                    "<td id='ingredients-"+i+"'>" + ingredients + "</td>" +
+                    "<td><button id='favesBtnId-" + i + "'class=\"favesBtn glyphicon glyphicon-heart-empty\">" + "</button></a></td></tr>";
                 table.append(newRow);
             }
             $("#recipe-results").append(table);
             yummly.getRecipeLink();
         });
+    },
+    randomRecipe: function(){
+        var ingredients = ["chicken", "pasta", "butter", "tomato", "feta", "olives", "lettuce", "apple", "milk", "carrot", "cracker", "steak", "salmon", "turkey", "tofu", "sour cream", "eggs", "spinach", "chedar cheese", "almonds", "onion", "green beans", "squash", "potato", "cauliflower", "broth", "mushrooms", "salsa", "hashbrowns", "bread", "raisins", "quinoa", "brown rice", "bell pepper", "banana", "bok choy", "soy sauce", "tortilla chips"];
+
+        var randomIngredient = ingredients[Math.floor(Math.random() * ingredients.length)];
+        
+        $.ajax({
+            url: "http://api.yummly.com/v1/api/recipes?_app_id=804bf8b9&_app_key=41611fa0ed256dc5c5378bdf87593e25&allowedIngredient[]=" + encodeURIComponent(randomIngredient),
+            method: "GET"
+        }).done(function(response){
+            console.log(response);
+
+            var result=response.matches;
+            yummlyMatches = response.matches;
+            var recipeName = "";
+
+            var table = $("<table class=\"table result-table\">" +
+                "<tr>" +
+                "<th>" + "Image" + "</th>" +
+                "<th>" + "Recipe Name" + "</th>" +
+                "<th>" + "Ingredients" + "</th>" + "<th>" + "Favorite?" + "</th>" +
+                "</tr>" +
+                "</table>");
+
+            $("#either-divTwo").append("<p>Try one of these recipes!</p>");
+            for (var i=0; i < result.length; i++){
+
+                var recipeId="http://www.yummly.com/recipe/" + result[i].id;
+                console.log(recipeId);
+                var recipeName=result[i].recipeName;
+                var recipeImage=result[i].smallImageUrls[0];
+
+                //console.log(recipeImage);
+                var ingredients=result[i].ingredients;
+                
+
+                var newRow = "<tr class='table-row'>" + 
+                    "<td><img id='recImg-"+ i +"'src='" + recipeImage + "'>"+"</td>" +
+                    "<td><a id ='recipe-" + i + "'target='_blank'>" + recipeName + "</a></td>" +
+                    "<td id='ingredients-"+i+"'>" + ingredients + "</td>" +
+                    "<td><button id='favesBtnId-" + i + "'class=\"favesBtn\">" + "<span id=\"heart\" class=\"glyphicon glyphicon-heart-empty\"></span>" + "</button></a></td></tr>";
+                table.append(newRow);
+            }
+            $("#either-divTwo").append(table);
+            yummly.getRecipeLink();
+        });
+    },
+    saveRecipe: function(num) {
+        var user = firebase.auth().currentUser.uid;
+        var pic = $("#recImg-" + num).attr("src");
+        var link = $("#recipe-" + num).attr("href");
+        var name = $("#recipe-" + num).text();
+        var materials=$("#ingredients-"+ num).text();
+
+        console.log(user);
+        console.log(pic);
+        console.log(link);
+        console.log(name);
+        console.log(materials);
+
+        firebase.database().ref("/users").child(user).push({
+            uid: user,
+            recipe: name,
+            url: link,
+            ingredients: materials,
+            img: pic
+        });
     }
 }
+//Call Yummly function when submit button is clicked
+$("#ingredient-submit").on("click", function(){
+    $("#recipe-results").empty();
+    yummly.callYummly();
+});
+
+//Saves Recipe to firebase when heart button is clicked
+$(document).on("click", ".favesBtn", function(event) {
+    event.preventDefault();
+    var state=$(this).attr("class");
+    console.log(state);
+    if (state==="favesBtn glyphicon glyphicon-heart-empty") {
+        $(this).removeClass("glyphicon glyphicon-heart-empty");
+        $(this).addClass("glyphicon glyphicon-heart");
+
+        if(loggedIn !== false) {
+        var id = $(this).attr("id");
+
+            switch(id) {
+                case "favesBtnId-0":
+                    yummly.saveRecipe(0);
+                    break;
+                case "favesBtnId-1":
+                     yummly.saveRecipe(1);
+                    break;
+                case "favesBtnId-2":
+                     yummly.saveRecipe(2);
+                    break;
+                case "favesBtnId-3":
+                     yummly.saveRecipe(3);
+                    break;
+                case "favesBtnId-4":
+                     yummly.saveRecipe(4);
+                    break;
+                case "favesBtnId-5":
+                     yummly.saveRecipe(5);
+                    break;
+                case "favesBtnId-6":
+                     yummly.saveRecipe(6);
+                    break;
+                case "favesBtnId-7":
+                     yummly.saveRecipe(7);
+                    break;
+                case "favesBtnId-8":
+                     yummly.saveRecipe(8);
+                    break;
+                case "favesBtnId-9":
+                     yummly.saveRecipe(9);
+                    break;
+                default:
+                console.log("nothing to save");
+            }
+        }
+    }
+
+    if (state==="favesBtn glyphicon glyphicon-heart"){
+        $(this).removeClass("glyphicon glyphicon-heart");
+        $(this).addClass("glyphicon glyphicon-heart-empty");
+
+        //code to remove recipes from favorites
+    }
+
+    
+});
+
+//show Favorite Recipes
+$(document).on("click", "#favesInBtn", function(){
+
+    var table = $("<table class=\"table result-table\">" +
+        "<tr>" +
+        "<th>" + "Image" + "</th>" +
+        "<th>" + "Recipe Name" + "</th>" +
+        "<th>" + "Ingredients" + "</th>" + "<th>" + "Favorite?" + "</th>" +
+        "</tr>" +
+        "</table>");
+
+    var user = firebase.auth().currentUser.uid;
+    firebase.database().ref("/users").child(user).on("child_added", function(snapshot){
+        var recipeImage=snapshot.val().img;
+        var recipeName=snapshot.val().recipe;
+        var link=snapshot.val().url;
+        var ingredients=snapshot.val().ingredients;
+
+        console.log(recipeImage);
+        console.log(ingredients);
+
+    var newRow = "<tr class='table-row'>" + 
+        "<td><img id='recImg-" +"'src='" + recipeImage + "'>"+"</td>" +
+        "<td><a id ='recipe-" + "'target='_blank'>" + recipeName + "</a></td>" +
+        "<td id='ingredients-"+"'>" + ingredients + "</td>" +
+        "<td><button id='favesBtnId-"+ "'class=\"favesBtn\">" + "<span id=\"heart\" class=\"glyphicon glyphicon-heart\"></span>" + "</button></a></td></tr>";
+    table.append(newRow);
+
+    $("#recipe-results").append(table);
+
+    });
+});
 
 /*************Zomato Function Calls*************/
 //City input and submission
@@ -435,12 +613,12 @@ $("#option-results").on("click", "a.rest-overview", function(){
     window.open(this.href);
 });
 
+/*************Surprise Me Function Calls*************/
 //Grab user input
 $("#zip-submit").on("click", function() {
     event.preventDefault();
     cityName = $("#zip-input").val().trim();
     zomato.coinFlip();
-
 });
 
 $("#either-divTwo").on("click", ".city-select", function(){
@@ -448,6 +626,15 @@ $("#either-divTwo").on("click", ".city-select", function(){
     zomato.randomRestaurant(cityId);
 });
 
+$("#either-divThree").on("click", ".reset", function() {
+    zomato.randomRestaurant(cityId);
+});
+
+$("#either-divThree").on("click", "a.rest-overview", function(){
+    window.open(this.href);
+});
+
+//Firebase login, logout, sign up click events
 $("#submitLogin1").on("click", function() {
     var email = $("#email1").val();
     var pwd = $("#password1").val()
@@ -470,3 +657,6 @@ $("#submitNewUser").on("click", function() {
 $("#logout").on("click", function(){
     dataMethods.logOut();
 })
+// End Firebase functions
+
+    
