@@ -363,11 +363,11 @@ var zomato = {
             //Dynamically create table
             var resultTable = $("<table class='table'>");
 
-            resultTable.append("<thead><tr><th>Image</th>"+
+            resultTable.append("<thead><tr><th>mage</th>"+
                 "<th>Restaurant</th>"+
                 "<th>Price Range <i class='glyphicon glyphicon-triangle-bottom sort-price'></i></th>"+
                 "<th>Rating <i class='glyphicon glyphicon-triangle-bottom sort-rating'></i></th>"+
-                "<th>"+" Favorites"+"</th>"+
+                "<th>"+" Favorite"+"</th>"+
                 "</tr></thead>");
 
             resultTable.append("<tbody>");
@@ -502,6 +502,7 @@ var yummly = {
             url: queryUrl + encodeURIComponent(queryItem),
             method: "GET"
         }).done(function(response){
+            console.log()
             var result=response.matches;
             yummlyMatches = response.matches;
             var recipeName = "";
@@ -535,7 +536,7 @@ var yummly = {
     },
     //Pick a random ingredient from array to make ajax call. Display results in a table.
     randomRecipe: function(){
-        var ingredients = ["chicken", "avocado", "lobster", "crab", "strawberry", "ice cream", "cool whip", "peanut butter", "quail", "garlic", "chili powder", "thyme", "mustard", "bacon", "ketchup", "pasta", "butter", "tomato", "feta", "olives", "lettuce", "apple", "milk", "carrot", "cracker", "steak", "salmon", "turkey", "tofu", "sour cream", "eggs", "spinach", "cheddar cheese", "almonds", "onion", "green beans", "squash", "potatoes", "cauliflower", "broth", "mushrooms", "salsa", "hashbrowns", "bread", "raisins", "quinoa", "brown rice", "bell pepper", "banana", "bok choy", "soy sauce", "tortilla chips"];
+        var ingredients = ["chicken", "pasta", "butter", "tomato", "feta", "olives", "lettuce", "apple", "milk", "carrot", "cracker", "steak", "salmon", "turkey", "tofu", "sour cream", "eggs", "spinach", "chedar cheese", "almonds", "onion", "green beans", "squash", "potato", "cauliflower", "broth", "mushrooms", "salsa", "hashbrowns", "bread", "raisins", "quinoa", "brown rice", "bell pepper", "banana", "bok choy", "soy sauce", "tortilla chips"];
 
         var randomIngredient = ingredients[Math.floor(Math.random() * ingredients.length)];
         $("#either-divTwo").empty();
@@ -760,14 +761,13 @@ $("#favs").on("click", function(){
     });
 
     //Dynamically create table for restaurants stored in firebase
-    var resultTable = $("<table class='table'>");
-
-    resultTable.append("<thead><tr><th>Image</th>"+
+    var resultTable = $("<table class='table'>"+
+        "<tr><th>Image</th>"+
         "<th>Restaurant</th>"+
         "<th>Price Range </th>"+
         "<th>Rating</th>"+
         "<th>"+"Favorites"+"</th>"+
-        "</tr></thead>");
+        "</tr>");
 
     var user = firebase.auth().currentUser.uid;
     database.ref("/users").child(user).child("restaurant").on("child_added", function(snapshot){
