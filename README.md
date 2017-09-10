@@ -1,1 +1,1 @@
-A team-built web application that was designed to help users figure out what to do for dinner. It uses AJAX calls to retrieve recipe and restaurant ideas from the Yummly and Zomato APIs with user input. With integration of Firebase, users can log in and save their favorite recipes and restaurants.
+
